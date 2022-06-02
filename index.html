@@ -1,51 +1,58 @@
 <!DOCTYPE html>
 <html>
   <head>
-      <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
-      <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
-  </head>
-  <body>
-    Python with Functions and Classes <br>
+        <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+        <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+        <py-env>
+            - matplotlib
+        </py-env>
+    <style>
+        h1 {
+            font-size: 20px; 
+            color: green; 
+            text-transform: uppercase;
+            text-align: center; 
+            margin: 0 0 35px 0; 
+            text-shadow: 0px 1px 0px #f2f2f2;
+        }
+    </style>
+    </head>
+    <h1>PyScript External Python Libraries</h1>
+    <div id="mpl"></div>
     <py-script>
-class Person:
-  def __init__(self, first_name, last_name):
-    self.firstname = first_name
-    self.lastname = last_name
+import matplotlib.pyplot as plt
+import matplotlib.tri as tri
+import numpy as np
 
-class Student(Person):
-    def __init__(self, first_name, last_name, university):
-        self.university = university
-        super().__init__(first_name, last_name)
-    
-    def __str__(self):
-        return "Student: %s %s University: %s" % (self.firstname, self.lastname, self.university)
+# First create the x and y coordinates of the points.
+n_angles = 36
+n_radii = 8
+min_radius = 0.25
+radii = np.linspace(min_radius, 0.95, n_radii)
 
+angles = np.linspace(0, 2 * np.pi, n_angles, endpoint=False)
+angles = np.repeat(angles[..., np.newaxis], n_radii, axis=1)
+angles[:, 1::2] += np.pi / n_angles
 
-def create_students():
-    stud1 = Student("Alexandru", "Plesoiu", "Babes-Bolyai")
-    stud2 = Student("Ashley", "Wong", "Cambridge")
-    stud3 = Student("Madden", "Baird", "Babes-Bolyai")
-    
-    return [stud1, stud2, stud3]
+x = (radii * np.cos(angles)).flatten()
+y = (radii * np.sin(angles)).flatten()
+z = (np.cos(radii) * np.cos(3 * angles)).flatten()
 
-def get_students_by_university(students, university):
-    return [stud for stud in students if stud.university == university]
+# Create the Triangulation; no triangles so Delaunay triangulation created.
+triang = tri.Triangulation(x, y)
 
-def print_students(students):
-    for student in students:
-        print(student)
+# Mask off unwanted triangles.
+triang.set_mask(np.hypot(x[triang.triangles].mean(axis=1),
+                         y[triang.triangles].mean(axis=1))
+                < min_radius)
 
-def main():
-    students = create_students()
-    ubb_students = get_students_by_university(students, "Babes-Bolyai")
-    
-    print("All Students:")
-    print_students(students)
-    
-    print("UBB Students:")
-    print_students(ubb_students)
+fig1, ax1 = plt.subplots()
+ax1.set_aspect('equal')
+tpc = ax1.tripcolor(triang, z, shading='flat')
+fig1.colorbar(tpc)
+ax1.set_title('tripcolor of Delaunay triangulation, flat shading')
 
-main()
+fig1
     </py-script>
   </body>
 </html>
